@@ -3,21 +3,17 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
+#import matplotlib as pl
 pd.set_option('mode.chained_assignment', None)
+
+#pl.use('Qt5Agg')
 
 from keras.models import Sequential
 from keras.layers import Dense, SimpleRNN
 from keras.optimizers import RMSprop
 from keras.callbacks import Callback
 
-
-humidity = pd.read_csv("humidity.csv")
-temp = pd.read_csv("temperature.csv")
-pressure = pd.read_csv("pressure.csv")
-
-humidity_SF = humidity[['datetime','San Francisco']]
-temp_SF = temp[['datetime','San Francisco']]
-pressure_SF = pressure[['datetime','San Francisco']]
 
 humidity = pd.read_csv("humidity.csv")
 temp = pd.read_csv("temperature.csv")
@@ -66,18 +62,23 @@ testX,testY =convertToMatrix(test,step)
 trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
-Tp = 700
+print("Training data shape:", trainX.shape,', ',trainY.shape)
+print("Test data shape:", testX.shape,', ',testY.shape)
 
-st.title("A simple Keras Callback class to print progress of the training at regular epoch interval")
-st.markdown("Since the RNN training is usually long, we want to see regular updates about epochs finishing. However, we may not want to see this update every epoch as that may flood the output stream. Therefore, we write a simple custom Callback function to print the finishing update every 50th epoch. You can think of adding other bells and whistles to this function to print error and other metrics dynamically.    ////show source code of the MyCallback")
-def build_simple_rnn(num_units=128, embedding=4,num_dense=32,lr=0.001):
+st.title("Plot RMSE loss over Epochs")
+st.markdown(
+    "Note that the loss metric available in the history attribute of the model is the MSE loss and you have to take a square-root to compute the RMSE loss."
+)
+
+
+def build_simple_rnn(num_units=128, embedding=4,num_dense=32,learning_rate=0.001):
     """
     Builds and compiles a simple RNN model
     Arguments:
               num_units: Number of units of a the simple RNN layer
               embedding: Embedding length
               num_dense: Number of neurons in the dense layer followed by the RNN layer
-              lr: Learning rate (uses RMSprop optimizer)
+              learning_rate: Learning rate (uses RMSprop optimizer)
     Returns:
               A compiled Keras model.
     """
@@ -85,27 +86,29 @@ def build_simple_rnn(num_units=128, embedding=4,num_dense=32,lr=0.001):
     model.add(SimpleRNN(units=num_units, input_shape=(1,embedding), activation="relu"))
     model.add(Dense(num_dense, activation="relu"))
     model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer=RMSprop(lr=lr),metrics=['mse'])
+    model.compile(loss='mean_squared_error', optimizer=RMSprop(learning_rate=learning_rate),metrics=['mse'])
     
     return model 
 
-model_humidity = build_simple_rnn(num_units=128,num_dense=32,embedding=8,lr=0.0005)
+model_humidity = build_simple_rnn(num_units=128,num_dense=32,embedding=8,learning_rate=0.0005)
+#model_humidity.summary(print_fn=lambda x: st.text(x))
 
 class MyCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
         if (epoch+1) % 50 == 0 and epoch>0:
+            st.text("Epoch number {} done".format(epoch+1))
             print("Epoch number {} done".format(epoch+1))
 
 batch_size=8
 num_epochs = 1000
+
+
+
 model_humidity.fit(trainX,trainY, 
           epochs=num_epochs, 
           batch_size=batch_size, 
           callbacks=[MyCallback()],verbose=0)
-
-
 plt.figure(figsize=(7,5))
-
 plt.title("RMSE loss over epochs",fontsize=16)
 plt.plot(np.sqrt(model_humidity.history.history['loss']),c='k',lw=2)
 plt.grid(True)
@@ -113,15 +116,5 @@ plt.xlabel("Epochs",fontsize=14)
 plt.ylabel("Root-mean-squared error",fontsize=14)
 plt.xticks(fontsize=14)
 plt.yticks(fontsize=14)
-plt.show()  
-#######added pyplot here        
-st.pyplot()
-plt.figure(figsize=(15,4))
-plt.title("This is what the model saw",fontsize=18)
-plt.plot(trainX[:,0][:,0],c='blue')
-plt.grid(True)
-plt.show()
-####added another pyplot here
-st.pyplot()
-
+plt.show()          
 

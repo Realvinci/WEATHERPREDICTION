@@ -3,7 +3,10 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+#import matplotlib as pl
 pd.set_option('mode.chained_assignment', None)
+
+#pl.use('Qt5Agg')
 
 from keras.models import Sequential
 from keras.layers import Dense, SimpleRNN
@@ -77,14 +80,14 @@ st.markdown(
       "learning rate"
 )
 
-def build_simple_rnn(num_units=128, embedding=4,num_dense=32,lr=0.001):
+def build_simple_rnn(num_units=128, embedding=4,num_dense=32,learning_rate=0.001):
     """
     Builds and compiles a simple RNN model
     Arguments:
               num_units: Number of units of a the simple RNN layer
               embedding: Embedding length
               num_dense: Number of neurons in the dense layer followed by the RNN layer
-              lr: Learning rate (uses RMSprop optimizer)
+              learning_rate: Learning rate (uses RMSprop optimizer)
     Returns:
               A compiled Keras model.
     """
@@ -92,10 +95,10 @@ def build_simple_rnn(num_units=128, embedding=4,num_dense=32,lr=0.001):
     model.add(SimpleRNN(units=num_units, input_shape=(1,embedding), activation="relu"))
     model.add(Dense(num_dense, activation="relu"))
     model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer=RMSprop(lr=lr),metrics=['mse'])
+    model.compile(loss='mean_squared_error', optimizer=RMSprop(learning_rate=learning_rate),metrics=['mse'])
     
     return model 
 
-model_humidity = build_simple_rnn(num_units=128,num_dense=32,embedding=8,lr=0.0005)
+model_humidity = build_simple_rnn(num_units=128,num_dense=32,embedding=8,learning_rate=0.0005)
 model_humidity.summary(print_fn=lambda x: st.text(x))
 

@@ -3,7 +3,10 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+#import matplotlib as pl
 pd.set_option('mode.chained_assignment', None)
+
+#pl.use('Qt5Agg')
 
 from keras.models import Sequential
 from keras.layers import Dense, SimpleRNN
@@ -61,17 +64,16 @@ testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 #print("Training data shape:", trainX.shape,', ',trainY.shape)
 #print("Test data shape:", testX.shape,', ',testY.shape)
 
-st.title("This Is the ground Truth and prediction together")
-st.markdown("Again note how the model is able to predict sudden increase in pressure around time-points 18000-22000. There was no indication of such shape or pattern of the data in the training set (the boundary is denoted by the vertical red line), yet, it is able to predict the general shape pretty well from the first 7000 data points!")
+st.title("Modeling Atmospheric pressure data")
 
-def build_simple_rnn(num_units=128, embedding=4,num_dense=32,lr=0.001):
+def build_simple_rnn(num_units=128, embedding=4,num_dense=32,learning_rate=0.001):
     """
     Builds and compiles a simple RNN model
     Arguments:
               num_units: Number of units of a the simple RNN layer
               embedding: Embedding length
               num_dense: Number of neurons in the dense layer followed by the RNN layer
-              lr: Learning rate (uses RMSprop optimizer)
+              learning_rate: Learning rate (uses RMSprop optimizer)
     Returns:
               A compiled Keras model.
     """
@@ -79,18 +81,18 @@ def build_simple_rnn(num_units=128, embedding=4,num_dense=32,lr=0.001):
     model.add(SimpleRNN(units=num_units, input_shape=(1,embedding), activation="relu"))
     model.add(Dense(num_dense, activation="relu"))
     model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer=RMSprop(lr=lr),metrics=['mse'])
+    model.compile(loss='mean_squared_error', optimizer=RMSprop(learning_rate=learning_rate),metrics=['mse'])
     
     return model 
 
-model_humidity = build_simple_rnn(num_units=128,num_dense=32,embedding=8,lr=0.0005)
+model_humidity = build_simple_rnn(num_units=128,num_dense=32,embedding=8,learning_rate=0.0005)
 #model_humidity.summary(print_fn=lambda x: st.text(x))
 
 class MyCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
         if (epoch+1) % 50 == 0 and epoch>0:
-             ""
-            #st.text("Epoch number {} done".format(epoch+1))
+             
+            st.text("Epoch number {} done".format(epoch+1))
 
 batch_size=8
 num_epochs = 1000
@@ -169,7 +171,7 @@ trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
 
-model_temp = build_simple_rnn(num_units=128,num_dense=32,embedding=8,lr=0.0005)
+model_temp = build_simple_rnn(num_units=128,num_dense=32,embedding=8,learning_rate=0.0005)
 
 batch_size=8
 num_epochs = 2000
@@ -206,7 +208,7 @@ trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
 
-model_pressure = build_simple_rnn(num_units=128,num_dense=32,embedding=8,lr=0.0005)
+model_pressure = build_simple_rnn(num_units=128,num_dense=32,embedding=8,learning_rate=0.0005)
 
 batch_size=8
 num_epochs = 500
@@ -215,22 +217,3 @@ model_pressure.fit(trainX,trainY,
           epochs=num_epochs, 
           batch_size=batch_size, 
           callbacks=[MyCallback()],verbose=0)
-
-
-trainPredict = model_pressure.predict(trainX)
-testPredict= model_pressure.predict(testX)
-predicted=np.concatenate((trainPredict,testPredict),axis=0)
-
-
-index = pressure_SF.index.values
-
-plt.figure(figsize=(15,5))
-plt.title("Pressure: Ground truth and prediction together",fontsize=18)
-plt.plot(index,pressure_SF['San Francisco'],c='blue')
-plt.plot(index,predicted,c='orange',alpha=0.75)
-plt.legend(['True data','Predicted'],fontsize=15)
-plt.axvline(x=Tp, c="r")
-plt.grid(True)
-plt.xticks(fontsize=14)
-plt.yticks(fontsize=14)
-plt.show()

@@ -3,7 +3,10 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+#import matplotlib as pl
 pd.set_option('mode.chained_assignment', None)
+
+#pl.use('Qt5Agg')
 
 from keras.models import Sequential
 from keras.layers import Dense, SimpleRNN
@@ -26,8 +29,8 @@ train = np.array(humidity_SF['San Francisco'][:Tp])
 test = np.array(humidity_SF['San Francisco'][Tp:])
 
 
-print("Train data length:", train.shape)
-print("Test data length:", test.shape)
+#st.text("Train data length:", train.shape)
+#st.text("Test data length:", test.shape)
 
 
 train=train.reshape(-1,1)
@@ -58,23 +61,24 @@ testX,testY =convertToMatrix(test,step)
 trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
-print("Training data shape:", trainX.shape,', ',trainY.shape)
-print("Test data shape:", testX.shape,', ',testY.shape)
+#print("Training data shape:", trainX.shape,', ',trainY.shape)
+#print("Test data shape:", testX.shape,', ',testY.shape)
 
-st.title("Plot RMSE loss over Epochs")
+st.title("Plotting th ground Truth and Model Prediction Together")
 st.markdown(
-    "Note that the loss metric available in the history attribute of the model is the MSE loss and you have to take a square-root to compute the RMSE loss."
+    "We plot the ground truth and the model predictions together to show that it follows the general trends in the ground truth data pretty well. Considering less"
+    "than 25% data was used for training, this is sort of amazing. The boundary between train and test splits is denoted by the vertical red line."
+    "There are, of course, some obvious mistakes in the model predictions, such as humidity values going above 100 and some very low values. These can be"
+    "pruned with post-processing or a better model can be built with propoer hyperparameter tuning."
 )
-
-
-def build_simple_rnn(num_units=128, embedding=4,num_dense=32,lr=0.001):
+def build_simple_rnn(num_units=128, embedding=4,num_dense=32,learning_rate=0.001):
     """
     Builds and compiles a simple RNN model
     Arguments:
               num_units: Number of units of a the simple RNN layer
               embedding: Embedding length
               num_dense: Number of neurons in the dense layer followed by the RNN layer
-              lr: Learning rate (uses RMSprop optimizer)
+              learning_rate: Learning rate (uses RMSprop optimizer)
     Returns:
               A compiled Keras model.
     """
@@ -82,18 +86,18 @@ def build_simple_rnn(num_units=128, embedding=4,num_dense=32,lr=0.001):
     model.add(SimpleRNN(units=num_units, input_shape=(1,embedding), activation="relu"))
     model.add(Dense(num_dense, activation="relu"))
     model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer=RMSprop(lr=lr),metrics=['mse'])
+    model.compile(loss='mean_squared_error', optimizer=RMSprop(learning_rate=learning_rate),metrics=['mse'])
     
     return model 
 
-model_humidity = build_simple_rnn(num_units=128,num_dense=32,embedding=8,lr=0.0005)
+model_humidity = build_simple_rnn(num_units=128,num_dense=32,embedding=8,learning_rate=0.0005)
 #model_humidity.summary(print_fn=lambda x: st.text(x))
 
 class MyCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
         if (epoch+1) % 50 == 0 and epoch>0:
-            
-            print("Epoch number {} done".format(epoch+1))
+            ""
+            #print("Epoch number {} done".format(epoch+1))
 
 batch_size=8
 num_epochs = 1000
@@ -103,17 +107,50 @@ num_epochs = 1000
           #epochs=num_epochs, 
           #batch_size=batch_size, 
           #callbacks=[MyCallback()],verbose=0)
-model_humidity.fit(trainX,trainY, 
-          epochs=num_epochs, 
-          batch_size=batch_size, 
-          callbacks=[MyCallback()],verbose=0)
-plt.figure(figsize=(7,5))
-plt.title("RMSE loss over epochs",fontsize=16)
-plt.plot(np.sqrt(model_humidity.history.history['loss']),c='k',lw=2)
+
+
+#model_humidity.fit(trainX,trainY, 
+          #epochs=num_epochs, 
+          #batch_size=batch_size, 
+          #callbacks=[MyCallback()],verbose=0)
+#plt.figure(figsize=(7,5))
+#plt.title("RMSE loss over epochs",fontsize=16)
+#plt.plot(np.sqrt(model_humidity.history.history['loss']),c='k',lw=2)
+#plt.grid(True)
+#plt.xlabel("Epochs",fontsize=14)
+#plt.ylabel("Root-mean-squared error",fontsize=14)
+#plt.xticks(fontsize=14)
+#plt.yticks(fontsize=14)
+#plt.show()          
+
+
+
+
+trainPredict = model_humidity.predict(trainX)
+testPredict= model_humidity.predict(testX)
+predicted=np.concatenate((trainPredict,testPredict),axis=0)
+
+
+
+
+
+#plt.figure(figsize=(10,4))
+#plt.title("This is what the model predicted",fontsize=18)
+#plt.plot(testPredict,c='orange')
+#plt.grid(True)
+#plt.show()
+
+
+index = humidity_SF.index.values
+
+plt.figure(figsize=(15,5))
+plt.title("Humidity: Ground truth and prediction together",fontsize=18)
+plt.plot(index,humidity_SF['San Francisco'],c='blue')
+plt.plot(index,predicted,c='orange',alpha=0.75)
+plt.legend(['True data','Predicted'],fontsize=15)
+plt.axvline(x=Tp, c="r")
 plt.grid(True)
-plt.xlabel("Epochs",fontsize=14)
-plt.ylabel("Root-mean-squared error",fontsize=14)
 plt.xticks(fontsize=14)
 plt.yticks(fontsize=14)
-plt.show()          
-
+plt.ylim(-20,120)
+plt.show()
