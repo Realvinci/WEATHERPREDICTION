@@ -4,4 +4,4 @@ matplotlib
 keras
 streamlit 
 tensorflow
-tkinter
+tk
