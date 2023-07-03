@@ -4,4 +4,4 @@ matplotlib
 keras
 streamlit 
 tensorflow
-libtk=8.6
+libtk==8.6
