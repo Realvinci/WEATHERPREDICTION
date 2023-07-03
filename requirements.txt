@@ -4,4 +4,4 @@ matplotlib
 keras
 streamlit 
 tensorflow
-Libtk
+libtk 8.6
